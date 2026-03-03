@@ -17,6 +17,8 @@
  * the file called "COPYING".
  */
 
+// modified for arm use -> uint64_t on lines 205-208
+
 #define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
 
 #include <linux/ioctl.h>
