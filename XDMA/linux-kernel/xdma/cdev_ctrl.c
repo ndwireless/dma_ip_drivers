@@ -17,7 +17,7 @@
  * the file called "COPYING".
  */
 
-#define pr_fmt(fmt)     KBUILD_MODNAME ":%s: " fmt, __func__
+#define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
 
 #include <linux/ioctl.h>
 #include "version.h"
@@ -34,7 +34,7 @@
  * character device file operations for control bus (through control bridge)
  */
 static ssize_t char_ctrl_read(struct file *fp, char __user *buf, size_t count,
-		loff_t *pos)
+							  loff_t *pos)
 {
 	struct xdma_cdev *xcdev = (struct xdma_cdev *)fp->private_data;
 	struct xdma_dev *xdev;
@@ -52,10 +52,10 @@ static ssize_t char_ctrl_read(struct file *fp, char __user *buf, size_t count,
 		return -EPROTO;
 	/* first address is BAR base plus file position offset */
 	reg = xdev->bar[xcdev->bar] + *pos;
-	//w = read_register(reg);
+	// w = read_register(reg);
 	w = ioread32(reg);
 	dbg_sg("%s(@%p, count=%ld, pos=%d) value = 0x%08x\n",
-			__func__, reg, (long)count, (int)*pos, w);
+		   __func__, reg, (long)count, (int)*pos, w);
 	rv = copy_to_user(buf, &w, 4);
 	if (rv)
 		dbg_sg("Copy to userspace failed but continuing\n");
@@ -65,7 +65,7 @@ static ssize_t char_ctrl_read(struct file *fp, char __user *buf, size_t count,
 }
 
 static ssize_t char_ctrl_write(struct file *file, const char __user *buf,
-			size_t count, loff_t *pos)
+							   size_t count, loff_t *pos)
 {
 	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
 	struct xdma_dev *xdev;
@@ -89,8 +89,8 @@ static ssize_t char_ctrl_write(struct file *file, const char __user *buf,
 		pr_info("copy from user failed %d/4, but continuing.\n", rv);
 
 	dbg_sg("%s(0x%08x @%p, count=%ld, pos=%d)\n",
-			__func__, w, reg, (long)count, (int)*pos);
-	//write_register(w, reg);
+		   __func__, w, reg, (long)count, (int)*pos);
+	// write_register(w, reg);
 	iowrite32(w, reg);
 	*pos += 4;
 	return 4;
@@ -103,9 +103,10 @@ static long version_ioctl(struct xdma_cdev *xcdev, void __user *arg)
 	int rv;
 
 	rv = copy_from_user((void *)&obj, arg, sizeof(struct xdma_ioc_info));
-	if (rv) {
+	if (rv)
+	{
 		pr_info("copy from user failed %d/%ld.\n",
-			rv, sizeof(struct xdma_ioc_info));
+				rv, sizeof(struct xdma_ioc_info));
 		return -EFAULT;
 	}
 	memset(&obj, 0, sizeof(obj));
@@ -137,41 +138,47 @@ long char_ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return rv;
 
 	xdev = xcdev->xdev;
-	if (!xdev) {
+	if (!xdev)
+	{
 		pr_info("cmd %u, xdev NULL.\n", cmd);
 		return -EINVAL;
 	}
 	pr_info("cmd 0x%x, xdev 0x%p, pdev 0x%p.\n", cmd, xdev, xdev->pdev);
 
-	if (_IOC_TYPE(cmd) != XDMA_IOC_MAGIC) {
+	if (_IOC_TYPE(cmd) != XDMA_IOC_MAGIC)
+	{
 		pr_err("cmd %u, bad magic 0x%x/0x%x.\n",
-			 cmd, _IOC_TYPE(cmd), XDMA_IOC_MAGIC);
+			   cmd, _IOC_TYPE(cmd), XDMA_IOC_MAGIC);
 		return -ENOTTY;
 	}
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		result = !xlx_access_ok(VERIFY_WRITE, (void __user *)arg,
-				_IOC_SIZE(cmd));
+								_IOC_SIZE(cmd));
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		result =  !xlx_access_ok(VERIFY_READ, (void __user *)arg,
-				_IOC_SIZE(cmd));
+		result = !xlx_access_ok(VERIFY_READ, (void __user *)arg,
+								_IOC_SIZE(cmd));
 
-	if (result) {
+	if (result)
+	{
 		pr_err("bad access %ld.\n", result);
 		return -EFAULT;
 	}
 
-	switch (cmd) {
+	switch (cmd)
+	{
 	case XDMA_IOCINFO:
-		if (copy_from_user((void *)&ioctl_obj, (void __user *) arg,
-			 sizeof(struct xdma_ioc_base))) {
+		if (copy_from_user((void *)&ioctl_obj, (void __user *)arg,
+						   sizeof(struct xdma_ioc_base)))
+		{
 			pr_err("copy_from_user failed.\n");
 			return -EFAULT;
 		}
 
-		if (ioctl_obj.magic != XDMA_XCL_MAGIC) {
+		if (ioctl_obj.magic != XDMA_XCL_MAGIC)
+		{
 			pr_err("magic 0x%x !=  XDMA_XCL_MAGIC (0x%x).\n",
-				ioctl_obj.magic, XDMA_XCL_MAGIC);
+				   ioctl_obj.magic, XDMA_XCL_MAGIC);
 			return -ENOTTY;
 		}
 		return version_ioctl(xcdev, (void __user *)arg);
@@ -193,10 +200,10 @@ int bridge_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct xdma_dev *xdev;
 	struct xdma_cdev *xcdev = (struct xdma_cdev *)file->private_data;
-	unsigned long off;
-	unsigned long phys;
-	unsigned long vsize;
-	unsigned long psize;
+	uint64_t off;
+	uint64_t phys;
+	uint64_t vsize;
+	uint64_t psize;
 	int rv;
 
 	rv = xcdev_check(__func__, xcdev, 0);
@@ -210,7 +217,7 @@ int bridge_mmap(struct file *file, struct vm_area_struct *vma)
 	vsize = vma->vm_end - vma->vm_start;
 	/* complete resource */
 	psize = pci_resource_end(xdev->pdev, xcdev->bar) -
-		pci_resource_start(xdev->pdev, xcdev->bar) + 1 - off;
+			pci_resource_start(xdev->pdev, xcdev->bar) + 1 - off;
 
 	dbg_sg("mmap(): xcdev = 0x%08lx\n", (unsigned long)xcdev);
 	dbg_sg("mmap(): cdev->bar = %d\n", xcdev->bar);
@@ -218,8 +225,8 @@ int bridge_mmap(struct file *file, struct vm_area_struct *vma)
 	dbg_sg("mmap(): pci_dev = 0x%08lx\n", (unsigned long)xdev->pdev);
 	dbg_sg("off = 0x%lx, vsize 0x%lu, psize 0x%lu.\n", off, vsize, psize);
 	dbg_sg("start = 0x%llx\n",
-		(unsigned long long)pci_resource_start(xdev->pdev,
-		xcdev->bar));
+		   (unsigned long long)pci_resource_start(xdev->pdev,
+												  xcdev->bar));
 	dbg_sg("phys = 0x%lx\n", phys);
 
 	if (vsize > psize)
@@ -234,21 +241,21 @@ int bridge_mmap(struct file *file, struct vm_area_struct *vma)
 	 * and prevent the pages from being swapped out
 	 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
-        vm_flags_set(vma, VMEM_FLAGS);
+	vm_flags_set(vma, VMEM_FLAGS);
 #elif defined(RHEL_RELEASE_CODE)
-	#if (RHEL_RELEASE_CODE > RHEL_RELEASE_VERSION(9, 4))
-        vm_flags_set(vma, VMEM_FLAGS);
-	#else
+#if (RHEL_RELEASE_CODE > RHEL_RELEASE_VERSION(9, 4))
+	vm_flags_set(vma, VMEM_FLAGS);
+#else
 	vma->vm_flags |= VMEM_FLAGS;
-	#endif
+#endif
 #else
 	vma->vm_flags |= VMEM_FLAGS;
 #endif
 	/* make MMIO accessible to user space */
 	rv = io_remap_pfn_range(vma, vma->vm_start, phys >> PAGE_SHIFT,
-			vsize, vma->vm_page_prot);
+							vsize, vma->vm_page_prot);
 	dbg_sg("vma=0x%p, vma->vm_start=0x%lx, phys=0x%lx, size=%lu = %d\n",
-		vma, vma->vm_start, phys >> PAGE_SHIFT, vsize, rv);
+		   vma, vma->vm_start, phys >> PAGE_SHIFT, vsize, rv);
 
 	if (rv)
 		return -EAGAIN;
