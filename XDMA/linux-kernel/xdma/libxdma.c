@@ -4231,31 +4231,18 @@ static int set_dma_mask(struct pci_dev *pdev)
 
 	dbg_init("sizeof(dma_addr_t) == %ld\n", sizeof(dma_addr_t));
 	/* 64-bit addressing capability for XDMA? */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) 
-#else
-	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64))) 
-#endif
-	{
+	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
 		/* query for DMA transfer */
 		/* @see Documentation/DMA-mapping.txt */
-		dbg_init("set_dma_mask(64)\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
-		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
-#endif
+		dbg_init("pci_set_dma_mask()\n");
 		/* use 64-bit DMA */
 		dbg_init("Using a 64-bit DMA mask.\n");
-	} else 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
-	if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) 
-#else
-	if (!dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(32))) 
-#endif
-	{
+		/* use 32-bit DMA for descriptors */
+		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+		/* use 64-bit DMA, 32-bit for consistent */
+	} else if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
 		dbg_init("Could not set 64-bit DMA mask.\n");
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 16, 0)
 		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
-#endif
 		/* use 32-bit DMA */
 		dbg_init("Using a 32-bit DMA mask.\n");
 	} else {
